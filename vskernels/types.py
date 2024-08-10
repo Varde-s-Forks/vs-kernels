@@ -46,36 +46,36 @@ class SampleGridModel(CustomIntEnum):
     MATCH_CENTERS = 1
 
     def __call__(
-        self, width: int, height: int, src_width: int, src_height: int, shift: tuple[float, float]
+        self, width: int, height: int, src_width: float, src_height: float, shift: tuple[float, float], **kwargs: Any
     ) -> tuple[KwargsT, tuple[float, float]]:
-        kwargs = KwargsT()
 
         if self is SampleGridModel.MATCH_CENTERS:
             src_width = src_width * (width - 1) / (src_width - 1)
             src_height = src_height * (height - 1) / (src_height - 1)
 
-            kwargs |= dict(src_width=src_width, src_height=src_height)
             shift = tuple[float, float](
                 (x / 2 + y for x, y in zip(((height - src_height), (width - src_width)), shift))
             )
+
+        kwargs |= dict(src_width=src_width, src_height=src_height)
 
         return kwargs, shift
 
     def for_scale(
         self, clip: vs.VideoNode, width: int, height: int, shift: tuple[float, float], **kwargs: Any
     ) -> tuple[KwargsT, tuple[float, float]]:
-        src_width = kwargs.get('src_width', width)
-        src_height = kwargs.get('src_height', height)
+        src_width = kwargs.pop('src_width', width)
+        src_height = kwargs.pop('src_height', height)
 
-        return self(src_width, src_height, width, height, shift)
+        return self(**KwargsT(width=src_width, height=src_height, src_width=width, src_height=height, shift=shift) | kwargs)
 
     def for_descale(
         self, clip: vs.VideoNode, width: int, height: int, shift: tuple[float, float], **kwargs: Any
     ) -> tuple[KwargsT, tuple[float, float]]:
-        src_width = kwargs.get('src_width', clip.width)
-        src_height = kwargs.get('src_height', clip.height)
+        src_width = kwargs.pop('src_width', clip.width)
+        src_height = kwargs.pop('src_height', clip.height)
 
-        return self(width, height, src_width, src_height, shift)
+        return self(**KwargsT(width=width, height=height, src_width=src_width, src_height=src_height, shift=shift) | kwargs)
 
 
 TopShift: TypeAlias = float
